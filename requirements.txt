@@ -1,0 +1,9 @@
+Flask
+Flask-CORS
+python-dotenv
+groq
+supabase
+requests
+PyJWT
+Werkzeug
+gunicorn

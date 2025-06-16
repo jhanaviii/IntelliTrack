@@ -1,0 +1,190 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+}
+
+.auth-container {
+    display: grid;
+    grid-template-columns: 1fr 450px;
+    min-height: 100vh;
+}
+
+.hero-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: white;
+}
+
+.hero-content {
+    text-align: center;
+    max-width: 600px;
+}
+
+.hero-content h1 {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.hero-content p {
+    font-size: 1.5rem;
+    margin-bottom: 3rem;
+    opacity: 0.9;
+}
+
+.features-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.feature {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 1rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.auth-forms {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.form-container {
+    display: none;
+    width: 100%;
+    max-width: 400px;
+}
+
+.form-container.active {
+    display: block;
+}
+
+.form-container h2 {
+    color: #333;
+    margin-bottom: 2rem;
+    text-align: center;
+    font-size: 1.8rem;
+}
+
+.form-container input, .form-container select {
+    width: 100%;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 2px solid #e1e1e1;
+    border-radius: 10px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-container input:focus, .form-container select:focus {
+    border-color: #667eea;
+}
+
+.education-fields {
+    transition: all 0.3s ease;
+}
+
+.education-fields input, .education-fields select {
+    margin-bottom: 0.8rem;
+}
+
+.form-container button {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.form-container button:hover {
+    transform: translateY(-2px);
+}
+
+.form-container p {
+    text-align: center;
+    margin-top: 1rem;
+    color: #666;
+}
+
+.form-container a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.form-container a:hover {
+    text-decoration: underline;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.error {
+    background: #ff6b6b;
+}
+
+.notification.success {
+    background: #00ff88;
+    color: black;
+}
+
+@media (max-width: 768px) {
+    .auth-container {
+        grid-template-columns: 1fr;
+    }
+
+    .hero-content h1 {
+        font-size: 2.5rem;
+    }
+
+    .hero-content p {
+        font-size: 1.2rem;
+    }
+
+    .features-preview {
+        grid-template-columns: 1fr;
+    }
+
+    .auth-forms {
+        padding: 1rem;
+    }
+}

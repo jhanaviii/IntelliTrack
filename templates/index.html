@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliTrack Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <h1>🎯 IntelliTrack Dashboard</h1>
+                <div class="user-info">
+                    <span id="userName">Welcome!</span>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard-grid">
+            <!-- Task Management Section -->
+            <div class="task-section">
+                <div class="section-header">
+                    <h2>📋 Task Manager</h2>
+                    <button class="add-task-btn" onclick="openTaskModal()">+ Add Task</button>
+                </div>
+                <div class="task-filters">
+                    <button class="filter-btn active" onclick="filterTasks('all')">All</button>
+                    <button class="filter-btn" onclick="filterTasks('pending')">Pending</button>
+                    <button class="filter-btn" onclick="filterTasks('completed')">Completed</button>
+                    <button class="filter-btn" onclick="filterTasks('overdue')">Overdue</button>
+                </div>
+                <div id="taskContainer" class="task-container">
+                    <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Career Counseling Section -->
+            <div class="career-section">
+                <div class="section-header">
+                    <h2>🤖 AI Career Counselor</h2>
+                </div>
+                <div class="career-input-area">
+                    <textarea id="careerInput" placeholder="Tell me about your interests, skills, academic background, and career goals..."></textarea>
+                    <button onclick="getCareerAdvice()" class="advice-btn">Get AI Advice</button>
+                </div>
+                <div id="careerAdvice" class="career-advice">
+                    <p>Share your interests and goals to receive personalized career guidance!</p>
+                </div>
+            </div>
+
+            <!-- Learning Roadmaps Section -->
+            <div class="roadmap-section">
+                <div class="section-header">
+                    <h2>🗺️ Learning Roadmaps</h2>
+                    <button class="generate-roadmap-btn" onclick="openRoadmapModal()">
+                        Generate Roadmap
+                    </button>
+                </div>
+                <div id="roadmapContainer" class="roadmap-container">
+                    <div class="roadmap-placeholder">
+                        <p>Generate your personalized learning roadmap based on your career goals</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="analytics-section">
+                <div class="section-header">
+                    <h2>📊 Progress Analytics</h2>
+                </div>
+                <div class="analytics-grid">
+                    <div class="stat-card">
+                        <h3 id="totalTasks">0</h3>
+                        <p>Total Tasks</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="completedTasks">0</h3>
+                        <p>Completed</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="pendingTasks">0</h3>
+                        <p>Pending</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3 id="productivityScore">0%</h3>
+                        <p>Productivity</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Task</h3>
+            <form id="taskForm">
+                <input type="text" id="taskTitle" placeholder="Task Title" required>
+                <textarea id="taskDescription" placeholder="Task Description"></textarea>
+                <input type="date" id="taskDueDate" required>
+                <select id="taskPriority">
+                    <option value="low">Low Priority</option>
+                    <option value="medium" selected>Medium Priority</option>
+                    <option value="high">High Priority</option>
+                </select>
+                <div class="form-actions">
+                    <button type="button" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit">Add Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Roadmap Generation Modal -->
+    <div id="roadmapModal" class="modal">
+        <div class="modal-content">
+            <h3>Generate Learning Roadmap</h3>
+            <form id="roadmapForm">
+                <select id="careerGoal" required>
+                    <option value="">Select Career Goal</option>
+                    <option value="Software Engineer">Software Engineer</option>
+                    <option value="Data Scientist">Data Scientist</option>
+                    <option value="AI/ML Engineer">AI/ML Engineer</option>
+                    <option value="Web Developer">Web Developer</option>
+                    <option value="Mobile Developer">Mobile Developer</option>
+                    <option value="DevOps Engineer">DevOps Engineer</option>
+                    <option value="Cybersecurity Specialist">Cybersecurity Specialist</option>
+                    <option value="Product Manager">Product Manager</option>
+                </select>
+                <select id="currentLevel" required>
+                    <option value="">Current Skill Level</option>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                </select>
+                <select id="timeframe" required>
+                    <option value="">Target Timeframe</option>
+                    <option value="3 months">3 months</option>
+                    <option value="6 months">6 months</option>
+                    <option value="1 year">1 year</option>
+                    <option value="2 years">2 years</option>
+                </select>
+                <textarea id="specificInterests" placeholder="Specific interests or technologies you want to focus on..."></textarea>
+                <div class="form-actions">
+                    <button type="button" onclick="closeRoadmapModal()">Cancel</button>
+                    <button type="submit">Generate Roadmap</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
