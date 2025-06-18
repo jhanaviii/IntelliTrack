@@ -8,6 +8,7 @@ import json
 import jwt
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
+import re
 
 load_dotenv()
 
@@ -177,6 +178,7 @@ def create_task(current_user_id):
             'title': data['title'],
             'description': data.get('description', ''),
             'due_date': data['due_date'],
+            'due_time': data.get('due_time', '23:59'),  # Default to end of day
             'priority': data.get('priority', 'medium'),
             'status': 'pending',
             'created_at': datetime.now().isoformat()
@@ -209,7 +211,137 @@ def delete_task(current_user_id, task_id):
         return jsonify({'error': str(e)}), 500
 
 
-# Career counseling route
+# AI task generation route
+@app.route('/api/generate-ai-tasks', methods=['POST'])
+@token_required
+def generate_ai_tasks(current_user_id):
+    try:
+        data = request.json
+        roadmap_data = data.get('roadmap_data', {})
+
+        # Extract projects and milestones from roadmap
+        tasks_to_create = []
+        for phase in roadmap_data.get('phases', []):
+            for project in phase.get('projects', []):
+                tasks_to_create.append({
+                    'title': f"Project: {project}",
+                    'description': f"Complete this project as part of {phase.get('phase', 'learning phase')}",
+                    'priority': 'medium'
+                })
+
+            for milestone in phase.get('milestones', []):
+                tasks_to_create.append({
+                    'title': f"Milestone: {milestone}",
+                    'description': f"Achieve this milestone in {phase.get('phase', 'learning phase')}",
+                    'priority': 'high'
+                })
+
+        # Create tasks with dates spread over the next month
+        created_tasks = []
+        base_date = datetime.now()
+
+        for i, task_data in enumerate(tasks_to_create[:10]):  # Limit to 10 tasks
+            due_date = base_date + timedelta(days=i * 3 + 1)  # Space tasks 3 days apart
+
+            task = {
+                'user_id': current_user_id,
+                'title': task_data['title'],
+                'description': task_data['description'],
+                'due_date': due_date.strftime('%Y-%m-%d'),
+                'due_time': '18:00',  # Default to 6 PM
+                'priority': task_data['priority'],
+                'status': 'pending',
+                'created_at': datetime.now().isoformat()
+            }
+
+            response = supabase.table('tasks').insert(task).execute()
+            if response.data:
+                created_tasks.append(response.data[0])
+
+        return jsonify({
+            'message': f'Generated {len(created_tasks)} AI tasks successfully',
+            'tasks': created_tasks
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+def format_ai_response_with_tables(text):
+    """Convert AI response to properly formatted HTML with tables"""
+
+    # Split into sections
+    sections = text.split('\n\n')
+    formatted_html = ""
+
+    for section in sections:
+        if not section.strip():
+            continue
+
+        # Check if this looks like a table (has multiple items with similar structure)
+        lines = section.split('\n')
+
+        # Handle headers (lines starting with **)
+        if section.startswith('**') and section.endswith('**'):
+            header = section.replace('**', '').strip()
+            formatted_html += f'<h3 class="advice-header">{header}</h3>\n'
+            continue
+
+        # Handle numbered lists that could be tables
+        if any(line.strip().startswith(f'{i}.') for i in range(1, 6) for line in lines):
+            # Check if it's a study schedule or comparison
+            if any(keyword in section.lower() for keyword in ['month', 'week', 'schedule', 'plan', 'timeline']):
+                # Create a table for schedules
+                formatted_html += '<table class="advice-table">\n'
+                formatted_html += '<thead><tr><th>Period</th><th>Focus Areas</th><th>Goals</th></tr></thead>\n<tbody>\n'
+
+                for line in lines:
+                    if line.strip() and line.strip()[0].isdigit():
+                        # Extract period and content
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            period = parts[0].strip()
+                            content = parts[1].strip()
+                            # Split content into focus and goals if possible
+                            if ' - ' in content:
+                                focus, goals = content.split(' - ', 1)
+                                formatted_html += f'<tr><td>{period}</td><td>{focus}</td><td>{goals}</td></tr>\n'
+                            else:
+                                formatted_html += f'<tr><td>{period}</td><td colspan="2">{content}</td></tr>\n'
+
+                formatted_html += '</tbody></table>\n'
+            else:
+                # Regular numbered list
+                formatted_html += '<ol class="advice-list">\n'
+                for line in lines:
+                    if line.strip() and line.strip()[0].isdigit():
+                        content = re.sub(r'^\d+\.\s*', '', line.strip())
+                        # Check for bold text
+                        content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
+                        formatted_html += f'<li>{content}</li>\n'
+                formatted_html += '</ol>\n'
+
+        # Handle bullet points
+        elif any(line.strip().startswith('-') or line.strip().startswith('•') for line in lines):
+            formatted_html += '<ul class="advice-list">\n'
+            for line in lines:
+                if line.strip().startswith(('-', '•')):
+                    content = line.strip()[1:].strip()
+                    content = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', content)
+                    formatted_html += f'<li>{content}</li>\n'
+            formatted_html += '</ul>\n'
+
+        # Handle regular paragraphs
+        else:
+            if section.strip():
+                # Format bold text
+                section = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', section)
+                formatted_html += f'<p class="advice-paragraph">{section.strip()}</p>\n'
+
+    return formatted_html
+
+
+# Career counseling route with enhanced formatting
 @app.route('/api/career-advice', methods=['POST'])
 @token_required
 def get_career_advice(current_user_id):
@@ -231,27 +363,43 @@ def get_career_advice(current_user_id):
 
         prompt = f"""You are an AI career counselor for students. {education_context}
 
-Based on the following student input, provide personalized career guidance:
+Based on the following student input, provide personalized career guidance in a well-structured format similar to ChatGPT:
 
 Student Input: {user_input}
 
-Please provide:
-1. Career path suggestions (3-4 options appropriate for their education level)
-2. Skills to develop
-3. Recommended courses/certifications
-4. Potential internship areas (if applicable)
-5. Next steps to take
+Please provide a comprehensive response with clear sections and tables where appropriate:
 
-Keep your response practical, encouraging, and actionable. Consider their current education level when making suggestions. Format it in a clear, structured way."""
+**Career Path Suggestions**
+Provide 3-4 career options with brief descriptions
+
+**Skills Development Plan**
+Create a table with skills, priority level, and learning resources
+
+**Study Schedule** (if exam-related)
+Create a detailed month-wise or week-wise study plan in table format
+
+**Recommended Resources**
+List courses, books, and platforms with descriptions
+
+**Timeline & Milestones**
+Provide a clear timeline with specific milestones
+
+**Action Steps**
+Give immediate next steps to take
+
+Format your response with clear headings using ** and create tables for schedules, comparisons, and structured data. Use numbered lists for sequential steps and bullet points for features/benefits."""
 
         chat_completion = groq_client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama3-8b-8192",
             temperature=0.7,
-            max_tokens=1000
+            max_tokens=1500
         )
 
         ai_response = chat_completion.choices[0].message.content
+
+        # Format the response with tables and proper structure
+        formatted_response = format_ai_response_with_tables(ai_response)
 
         # Save to database
         advice_data = {
@@ -262,13 +410,13 @@ Keep your response practical, encouraging, and actionable. Consider their curren
         }
         supabase.table('career_advice').insert(advice_data).execute()
 
-        return jsonify({'advice': ai_response})
+        return jsonify({'advice': formatted_response})
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
-# Learning Roadmap Generator
+# Learning Roadmap Generator with enhanced formatting
 @app.route('/api/roadmap/generate', methods=['POST'])
 @token_required
 def generate_roadmap(current_user_id):
@@ -290,47 +438,61 @@ def generate_roadmap(current_user_id):
         elif user_info.get('education_level') == 'college':
             education_context = f"The student is currently in {user_info.get('academic_year', 'college')} studying {user_info.get('field_of_study')}."
 
-        prompt = f"""Generate a detailed learning roadmap for a {current_level} level student who wants to become a {career_goal} within {timeframe}. {education_context}
+        prompt = f"""Generate a comprehensive learning roadmap for a {current_level} level student who wants to become a {career_goal} within {timeframe}. {education_context}
 
-Specific interests: {interests}
+Current skills and interests: {interests}
 
-Please provide a structured roadmap with:
-1. Learning phases appropriate for their education level
-2. Essential skills and technologies
-3. Recommended courses/resources (include both free and paid options)
-4. Project ideas suitable for their level
-5. Timeline milestones
+Create a detailed roadmap with the following structure:
 
-Format the response as JSON with this structure:
-{{
-    "roadmap_title": "Path to {career_goal}",
-    "phases": [
-        {{
-            "phase": "Phase 1: Foundation",
-            "duration": "2-3 months",
-            "skills": ["skill1", "skill2"],
-            "resources": [
-                {{"name": "Course Name", "type": "course", "url": ""}},
-                {{"name": "Book Name", "type": "book", "description": "desc"}}
-            ],
-            "projects": ["project1", "project2"],
-            "milestones": ["milestone1", "milestone2"]
-        }}
-    ],
-    "total_duration": "{timeframe}",
-    "difficulty_progression": "Beginner → Intermediate → Advanced"
-}}"""
+**Roadmap Overview**
+- Title: Path to {career_goal}
+- Duration: {timeframe}
+- Starting Level: {current_level}
+
+**Phase-wise Learning Plan**
+For each phase, include:
+1. Phase name and duration
+2. Core skills to develop
+3. Recommended resources (courses, books, tutorials)
+4. Hands-on projects
+5. Key milestones
+6. Assessment criteria
+
+**Skills Development Matrix**
+Create a table showing:
+- Skill Category
+- Beginner Level Tasks
+- Intermediate Level Tasks  
+- Advanced Level Tasks
+- Timeline
+
+**Project Portfolio**
+List 5-7 projects of increasing complexity with:
+- Project name
+- Skills practiced
+- Estimated time
+- Difficulty level
+
+**Resource Library**
+Categorize resources as:
+- Free Online Courses
+- Paid Certifications
+- Books & Documentation
+- Practice Platforms
+- Community & Networking
+
+Format as JSON but make it comprehensive and structured like a professional learning guide."""
 
         chat_completion = groq_client.chat.completions.create(
             messages=[{"role": "user", "content": prompt}],
             model="llama3-8b-8192",
             temperature=0.3,
-            max_tokens=1500
+            max_tokens=2000
         )
 
         ai_response = chat_completion.choices[0].message.content
 
-        # Try to parse JSON, provide fallback if needed
+        # Try to parse JSON, provide enhanced fallback if needed
         try:
             json_start = ai_response.find('{')
             json_end = ai_response.rfind('}') + 1
@@ -340,23 +502,62 @@ Format the response as JSON with this structure:
             else:
                 raise ValueError("No JSON found in response")
         except:
+            # Enhanced fallback with more comprehensive structure
             roadmap_data = {
-                "roadmap_title": f"Path to {career_goal}",
+                "roadmap_title": f"Complete Path to {career_goal}",
+                "overview": {
+                    "duration": timeframe,
+                    "starting_level": current_level,
+                    "target_role": career_goal
+                },
                 "phases": [
                     {
-                        "phase": "Phase 1: Foundation",
-                        "duration": "2-3 months",
-                        "skills": ["Programming Fundamentals", "Problem Solving"],
+                        "phase": "Phase 1: Foundation Building",
+                        "duration": "1-2 months",
+                        "skills": ["Programming Fundamentals", "Problem Solving", "Basic Mathematics",
+                                   "Version Control"],
                         "resources": [
-                            {"name": "Online Coding Bootcamp", "type": "course"},
-                            {"name": "Algorithm Design Manual", "type": "book"}
+                            {"name": "FreeCodeCamp", "type": "course", "url": "https://freecodecamp.org"},
+                            {"name": "Codecademy", "type": "course", "url": "https://codecademy.com"},
+                            {"name": "Git Handbook", "type": "documentation", "description": "Learn version control"}
                         ],
-                        "projects": ["Personal Portfolio", "Simple Web App"],
-                        "milestones": ["Complete basic programming course", "Build first project"]
+                        "projects": ["Personal Portfolio Website", "Simple Calculator", "Basic To-Do App"],
+                        "milestones": ["Complete programming basics", "Build first project",
+                                       "Set up development environment"],
+                        "assessment": "Build a functional web application with basic CRUD operations"
+                    },
+                    {
+                        "phase": "Phase 2: Skill Development",
+                        "duration": "2-3 months",
+                        "skills": ["Data Structures", "Algorithms", "Database Management", "API Development"],
+                        "resources": [
+                            {"name": "LeetCode", "type": "practice", "url": "https://leetcode.com"},
+                            {"name": "System Design Primer", "type": "guide",
+                             "description": "Learn system design basics"}
+                        ],
+                        "projects": ["Full-stack Web Application", "REST API", "Database-driven Project"],
+                        "milestones": ["Master core algorithms", "Build complex applications", "Deploy projects"],
+                        "assessment": "Create a full-stack application with user authentication and database"
+                    },
+                    {
+                        "phase": "Phase 3: Specialization",
+                        "duration": "2-3 months",
+                        "skills": ["Advanced Frameworks", "Cloud Technologies", "DevOps Basics", "Testing"],
+                        "resources": [
+                            {"name": "AWS Free Tier", "type": "platform", "description": "Learn cloud deployment"},
+                            {"name": "Docker Documentation", "type": "documentation", "description": "Containerization"}
+                        ],
+                        "projects": ["Microservices Architecture", "Cloud-deployed Application", "CI/CD Pipeline"],
+                        "milestones": ["Deploy to cloud", "Implement testing", "Master chosen framework"],
+                        "assessment": "Build and deploy a scalable application with proper testing and CI/CD"
                     }
                 ],
+                "skills_matrix": {
+                    "technical_skills": ["Programming", "Databases", "Cloud", "Testing"],
+                    "soft_skills": ["Communication", "Problem Solving", "Teamwork", "Time Management"]
+                },
                 "total_duration": timeframe,
-                "difficulty_progression": "Beginner → Intermediate → Advanced"
+                "difficulty_progression": "Beginner → Intermediate → Advanced → Expert"
             }
 
         # Save roadmap to database
@@ -391,6 +592,82 @@ def get_user_roadmaps(current_user_id):
             except:
                 continue
         return jsonify(roadmaps)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# User profile routes
+@app.route('/api/user/profile', methods=['GET'])
+@token_required
+def get_user_profile(current_user_id):
+    try:
+        user_response = supabase.table('users').select(
+            "id, name, email, education_level, academic_year, school_grade, field_of_study, institution_name").eq('id',
+                                                                                                                  current_user_id).execute()
+        if user_response.data:
+            return jsonify(user_response.data[0])
+        else:
+            return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/user/profile', methods=['PUT'])
+@token_required
+def update_user_profile(current_user_id):
+    try:
+        data = request.json
+        # Remove sensitive fields that shouldn't be updated
+        data.pop('password', None)
+        data.pop('password_hash', None)
+        data.pop('id', None)
+        data.pop('created_at', None)
+
+        response = supabase.table('users').update(data).eq('id', current_user_id).execute()
+        if response.data:
+            return jsonify(response.data[0])
+        else:
+            return jsonify({'error': 'Failed to update profile'}), 500
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# Analytics route
+@app.route('/api/analytics', methods=['GET'])
+@token_required
+def get_analytics(current_user_id):
+    try:
+        # Get tasks analytics
+        tasks_response = supabase.table('tasks').select("*").eq('user_id', current_user_id).execute()
+        tasks = tasks_response.data
+
+        total_tasks = len(tasks)
+        completed_tasks = len([t for t in tasks if t['status'] == 'completed'])
+        pending_tasks = len([t for t in tasks if t['status'] == 'pending'])
+        overdue_tasks = len([t for t in tasks if t['status'] == 'pending' and datetime.fromisoformat(
+            t['due_date'].replace('Z', '+00:00')) < datetime.now()])
+
+        # Get career advice count
+        advice_response = supabase.table('career_advice').select("id").eq('user_id', current_user_id).execute()
+        advice_count = len(advice_response.data)
+
+        # Get roadmaps count
+        roadmaps_response = supabase.table('learning_roadmaps').select("id").eq('user_id', current_user_id).execute()
+        roadmaps_count = len(roadmaps_response.data)
+
+        productivity_score = round((completed_tasks / total_tasks * 100) if total_tasks > 0 else 0)
+
+        analytics = {
+            'total_tasks': total_tasks,
+            'completed_tasks': completed_tasks,
+            'pending_tasks': pending_tasks,
+            'overdue_tasks': overdue_tasks,
+            'productivity_score': productivity_score,
+            'career_advice_sessions': advice_count,
+            'learning_roadmaps': roadmaps_count
+        }
+
+        return jsonify(analytics)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
