@@ -43,7 +43,7 @@ body {
     gap: 1rem;
 }
 
-.logout-btn {
+.profile-btn, .logout-btn {
     background: rgba(255, 255, 255, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.3);
     color: white;
@@ -53,7 +53,7 @@ body {
     transition: all 0.3s;
 }
 
-.logout-btn:hover {
+.profile-btn:hover, .logout-btn:hover {
     background: rgba(255, 255, 255, 0.3);
 }
 
@@ -63,7 +63,7 @@ body {
     gap: 2rem;
 }
 
-.task-section, .career-section, .roadmap-section, .analytics-section {
+.task-section, .career-section, .roadmap-section, .analytics-section, .pomodoro-section {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(20px);
     border-radius: 20px;
@@ -86,7 +86,12 @@ body {
     font-size: 1.5rem;
 }
 
-.add-task-btn, .advice-btn, .generate-roadmap-btn {
+.task-header-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.add-task-btn, .advice-btn, .generate-roadmap-btn, .ai-task-btn {
     background: linear-gradient(45deg, #00ff88, #00d4ff);
     border: none;
     color: black;
@@ -97,10 +102,296 @@ body {
     transition: transform 0.2s;
 }
 
-.add-task-btn:hover, .advice-btn:hover, .generate-roadmap-btn:hover {
+.ai-task-btn {
+    background: linear-gradient(45deg, #ff6b6b, #feca57);
+}
+
+.add-task-btn:hover, .advice-btn:hover, .generate-roadmap-btn:hover, .ai-task-btn:hover {
     transform: translateY(-2px);
 }
 
+/* FIXED Student ID Card Styles */
+.student-id-card {
+    max-width: 600px;
+    background: white;
+    color: #333;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    position: relative;
+}
+
+.card-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    z-index: 10;
+}
+
+.close-btn {
+    background: rgba(0,0,0,0.1);
+    border: none;
+    color: #666;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 50%;
+    transition: all 0.3s;
+}
+
+.close-btn:hover {
+    background: rgba(0,0,0,0.2);
+    color: #333;
+}
+
+.id-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0;
+}
+
+.card-header-section {
+    background: rgba(255,255,255,0.1);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+
+.institution-logo {
+    font-size: 3rem;
+    background: rgba(255,255,255,0.2);
+    padding: 1rem;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.3);
+}
+
+.institution-info h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+}
+
+.institution-info p {
+    margin: 0.5rem 0 0 0;
+    opacity: 0.9;
+    font-size: 1rem;
+}
+
+.card-main-content {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+.student-photo {
+    text-align: center;
+}
+
+.photo-placeholder {
+    width: 120px;
+    height: 150px;
+    background: rgba(255,255,255,0.2);
+    border: 2px dashed rgba(255,255,255,0.4);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.upload-photo-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+}
+
+.upload-photo-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.student-details {
+    display: grid;
+    gap: 1rem;
+}
+
+.detail-row {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    align-items: center;
+    gap: 1rem;
+}
+
+.detail-row label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.9);
+}
+
+.detail-row input {
+    padding: 0.5rem;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 5px;
+    background: rgba(255,255,255,0.1);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.detail-row input::placeholder {
+    color: rgba(255,255,255,0.6);
+}
+
+.detail-row input:focus {
+    outline: none;
+    border-color: rgba(255,255,255,0.6);
+    background: rgba(255,255,255,0.2);
+}
+
+.card-footer-section {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255,255,255,0.2);
+}
+
+.qr-section {
+    text-align: center;
+}
+
+.qr-code {
+    width: 60px;
+    height: 60px;
+    background: white;
+    color: black;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.6rem;
+    line-height: 1;
+}
+
+.qr-pattern {
+    font-family: monospace;
+}
+
+.qr-section p {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+
+.validity {
+    text-align: right;
+}
+
+.validity p {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.save-card-btn {
+    background: linear-gradient(45deg, #00ff88, #00d4ff);
+    border: none;
+    color: black;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.save-card-btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Pomodoro Timer Styles */
+.pomodoro-timer {
+    text-align: center;
+}
+
+.timer-display {
+    font-size: 4rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+    color: #00ff88;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.timer-controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.timer-controls button {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.timer-controls button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.timer-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.timer-settings {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.timer-settings label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: bold;
+}
+
+.timer-settings input {
+    width: 60px;
+    padding: 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    text-align: center;
+}
+
+.pomodoro-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.stat {
+    font-weight: bold;
+}
+
+/* Task Filters */
 .task-filters {
     display: flex;
     gap: 0.5rem;
@@ -234,10 +525,86 @@ body {
     border-radius: 15px;
     padding: 1.5rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    max-height: 300px;
+    max-height: 400px;
     overflow-y: auto;
-    white-space: pre-wrap;
     line-height: 1.6;
+}
+
+/* FIXED Career Advice Formatting */
+.career-advice h1, .career-advice h2, .career-advice h3, .career-advice h4 {
+    color: #00ff88;
+    margin: 1.5rem 0 1rem 0;
+    border-bottom: 2px solid rgba(0, 255, 136, 0.3);
+    padding-bottom: 0.5rem;
+}
+
+.career-advice table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.career-advice th {
+    background: rgba(0, 255, 136, 0.3);
+    color: #00ff88;
+    padding: 1rem;
+    text-align: left;
+    font-weight: bold;
+    border-bottom: 2px solid rgba(0, 255, 136, 0.5);
+}
+
+.career-advice td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    vertical-align: top;
+}
+
+.career-advice tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.career-advice tr:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.career-advice ul, .career-advice ol {
+    margin: 1rem 0;
+    padding-left: 2rem;
+}
+
+.career-advice li {
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+}
+
+.career-advice p {
+    margin-bottom: 1rem;
+    line-height: 1.6;
+}
+
+.career-advice strong {
+    color: #00ff88;
+    font-weight: bold;
+}
+
+/* FIXED Roadmap Modal */
+.roadmap-modal {
+    max-width: 600px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #333;
 }
 
 .roadmap-container {
@@ -253,16 +620,78 @@ body {
 .roadmap-header {
     text-align: center;
     margin-bottom: 2rem;
+    padding: 2rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .roadmap-header h3 {
-    font-size: 1.8rem;
+    font-size: 2rem;
     margin-bottom: 0.5rem;
+    color: #00ff88;
+}
+
+/* ENHANCED Roadmap Display with Tables */
+.roadmap-overview {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.roadmap-overview h4 {
+    color: #00ff88;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.overview-item {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.overview-item strong {
+    color: #00ff88;
+}
+
+.skills-matrix {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.skills-matrix h4 {
+    color: #00ff88;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+}
+
+.skills-categories {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+}
+
+.skill-category h5 {
+    color: #feca57;
+    margin-bottom: 1rem;
 }
 
 .roadmap-phases {
     display: grid;
-    gap: 1.5rem;
+    gap: 2rem;
 }
 
 .phase-card {
@@ -281,16 +710,28 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.2);
 }
 
+.phase-header h4 {
+    color: #00ff88;
+    font-size: 1.3rem;
+}
+
 .phase-duration {
     background: rgba(255, 255, 255, 0.2);
-    padding: 0.25rem 0.75rem;
+    padding: 0.5rem 1rem;
     border-radius: 15px;
     font-size: 0.9rem;
+    font-weight: bold;
 }
 
 .phase-content {
     display: grid;
-    gap: 1rem;
+    gap: 1.5rem;
+}
+
+.skills-section h5, .resources-section h5, .projects-section h5, .milestones-section h5, .assessment-section h5 {
+    color: #feca57;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
 }
 
 .skills-list {
@@ -310,14 +751,25 @@ body {
 }
 
 .resources-section ul,
-.projects-section ul {
+.projects-section ul,
+.milestones-section ul {
     margin-left: 1rem;
     margin-top: 0.5rem;
 }
 
 .resources-section li,
-.projects-section li {
+.projects-section li,
+.milestones-section li {
     margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.assessment-section p {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 10px;
+    border-left: 4px solid #00ff88;
+    margin-top: 0.5rem;
 }
 
 .analytics-grid {
@@ -362,6 +814,8 @@ body {
     max-width: 500px;
     width: 90%;
     color: #333;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 .modal-content h3 {
@@ -381,6 +835,12 @@ body {
     font-size: 1rem;
     outline: none;
     transition: border-color 0.3s;
+}
+
+.datetime-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
 }
 
 .modal-content input:focus,
@@ -459,5 +919,44 @@ body {
         flex-direction: column;
         gap: 1rem;
         text-align: center;
+    }
+
+    .card-main-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .detail-row {
+        grid-template-columns: 1fr;
+        text-align: left;
+    }
+
+    .card-footer-section {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+    }
+
+    .task-header-buttons {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .timer-settings {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .pomodoro-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .skills-categories {
+        grid-template-columns: 1fr;
+    }
+
+    .overview-grid {
+        grid-template-columns: 1fr;
     }
 }
