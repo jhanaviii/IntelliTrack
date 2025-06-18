@@ -1,5 +1,10 @@
 const API_BASE = '/api';
 let currentFilter = 'all';
+let pomodoroTimer = null;
+let pomodoroTime = 25 * 60;
+let isWorkSession = true;
+let pomodoroSessions = 0;
+let isPaused = false;
 
 document.addEventListener('DOMContentLoaded', function() {
     if (checkAuth()) {
@@ -7,10 +12,16 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTasks();
         loadUserRoadmaps();
         updateAnalytics();
+        setupCareerGoals(); // Setup education-specific career goals
 
-        // Setup form handlers
         document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
         document.getElementById('roadmapForm').addEventListener('submit', handleRoadmapSubmit);
+
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const currentTime = now.toTimeString().slice(0, 5);
+        document.getElementById('taskDueDate').value = today;
+        document.getElementById('taskDueTime').value = currentTime;
     }
 });
 
@@ -26,14 +37,6 @@ function checkAuth() {
 function loadUserData() {
     const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
     let welcomeText = `Welcome, ${userData.name || 'User'}!`;
-
-    // Add education info
-    if (userData.education_level === 'school' && userData.school_grade) {
-        welcomeText += ` (${userData.school_grade})`;
-    } else if (userData.education_level === 'college' && userData.academic_year) {
-        welcomeText += ` (${userData.academic_year})`;
-    }
-
     document.getElementById('userName').textContent = welcomeText;
 }
 
@@ -41,6 +44,165 @@ function logout() {
     localStorage.removeItem('user_token');
     localStorage.removeItem('user_data');
     window.location.href = '/auth';
+}
+
+// FIXED: Setup education-specific career goals
+function setupCareerGoals() {
+    const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+    const careerGoalSelect = document.getElementById('careerGoal');
+
+    let options = '';
+
+    if (userData.education_level === 'school') {
+        // School student career options
+        options = `
+            <option value="">Select Career Goal</option>
+            <option value="Engineering Student">Engineering Student</option>
+            <option value="Medical Student">Medical Student</option>
+            <option value="Commerce Student">Commerce Student</option>
+            <option value="Arts Student">Arts Student</option>
+            <option value="Science Student">Science Student</option>
+            <option value="Competitive Exam Preparation">Competitive Exam Preparation</option>
+            <option value="Skill Development">Skill Development</option>
+        `;
+    } else if (userData.education_level === 'college') {
+        // College student career options
+        options = `
+            <option value="">Select Career Goal</option>
+            <option value="Software Engineer">Software Engineer</option>
+            <option value="Data Scientist">Data Scientist</option>
+            <option value="AI/ML Engineer">AI/ML Engineer</option>
+            <option value="Web Developer">Web Developer</option>
+            <option value="Mobile Developer">Mobile Developer</option>
+            <option value="DevOps Engineer">DevOps Engineer</option>
+            <option value="Cybersecurity Specialist">Cybersecurity Specialist</option>
+            <option value="Product Manager">Product Manager</option>
+            <option value="Business Analyst">Business Analyst</option>
+            <option value="Research Scientist">Research Scientist</option>
+            <option value="Startup Founder">Startup Founder</option>
+        `;
+    } else {
+        // Default options
+        options = `
+            <option value="">Select Career Goal</option>
+            <option value="Software Engineer">Software Engineer</option>
+            <option value="Data Scientist">Data Scientist</option>
+            <option value="Web Developer">Web Developer</option>
+            <option value="Student">Student</option>
+        `;
+    }
+
+    careerGoalSelect.innerHTML = options;
+}
+
+// FIXED: Student Card Functions
+function showStudentCard() {
+    const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+
+    // Populate readonly fields
+    document.getElementById('displayInstitution').textContent = userData.institution_name || 'Institution Name';
+    document.getElementById('cardCourse').value = userData.education_level === 'school' ? userData.school_grade : userData.academic_year;
+    document.getElementById('cardDepartment').value = userData.field_of_study || '';
+
+    // Load saved profile data
+    const profileData = JSON.parse(localStorage.getItem('profile_data') || '{}');
+    document.getElementById('cardName').value = profileData.name || userData.name || '';
+    document.getElementById('cardStudentId').value = profileData.student_id || '';
+    document.getElementById('cardPhone').value = profileData.phone || '';
+    document.getElementById('cardEmergencyContact').value = profileData.emergency_contact || '';
+
+    document.getElementById('studentCardModal').style.display = 'flex';
+}
+
+function closeStudentCard() {
+    document.getElementById('studentCardModal').style.display = 'none';
+}
+
+function saveStudentCard() {
+    const profileData = {
+        name: document.getElementById('cardName').value,
+        student_id: document.getElementById('cardStudentId').value,
+        phone: document.getElementById('cardPhone').value,
+        emergency_contact: document.getElementById('cardEmergencyContact').value
+    };
+
+    localStorage.setItem('profile_data', JSON.stringify(profileData));
+    showNotification('Profile saved successfully!', 'success');
+    closeStudentCard();
+}
+
+// Pomodoro Timer Functions
+function startPomodoro() {
+    if (isPaused) {
+        isPaused = false;
+    } else {
+        const workMinutes = parseInt(document.getElementById('workMinutes').value);
+        const breakMinutes = parseInt(document.getElementById('breakMinutes').value);
+        pomodoroTime = isWorkSession ? workMinutes * 60 : breakMinutes * 60;
+    }
+
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('pauseBtn').disabled = false;
+    document.getElementById('pomodoroStatus').textContent = isWorkSession ? 'Working' : 'Break';
+
+    pomodoroTimer = setInterval(() => {
+        pomodoroTime--;
+        updateTimerDisplay();
+
+        if (pomodoroTime <= 0) {
+            clearInterval(pomodoroTimer);
+            completePomodoro();
+        }
+    }, 1000);
+}
+
+function pausePomodoro() {
+    clearInterval(pomodoroTimer);
+    isPaused = true;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('pomodoroStatus').textContent = 'Paused';
+}
+
+function resetPomodoro() {
+    clearInterval(pomodoroTimer);
+    isPaused = false;
+    isWorkSession = true;
+    const workMinutes = parseInt(document.getElementById('workMinutes').value);
+    pomodoroTime = workMinutes * 60;
+    updateTimerDisplay();
+
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('pomodoroStatus').textContent = 'Ready';
+}
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(pomodoroTime / 60);
+    const seconds = pomodoroTime % 60;
+    document.getElementById('timerMinutes').textContent = minutes.toString().padStart(2, '0');
+    document.getElementById('timerSeconds').textContent = seconds.toString().padStart(2, '0');
+}
+
+function completePomodoro() {
+    if (isWorkSession) {
+        pomodoroSessions++;
+        document.getElementById('pomodoroSessions').textContent = pomodoroSessions;
+        showNotification('Work session completed! Time for a break.', 'success');
+    } else {
+        showNotification('Break completed! Time to get back to work.', 'success');
+    }
+
+    isWorkSession = !isWorkSession;
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('pomodoroStatus').textContent = 'Session Complete';
+
+    setTimeout(() => {
+        if (confirm(isWorkSession ? 'Start work session?' : 'Start break?')) {
+            startPomodoro();
+        }
+    }, 3000);
 }
 
 async function loadTasks() {
@@ -71,7 +233,11 @@ function displayTasks(tasks) {
 
     const filteredTasks = filterTasksByStatus(tasks);
 
-    container.innerHTML = filteredTasks.map(task => `
+    container.innerHTML = filteredTasks.map(task => {
+        const dueDateTime = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
+        const formattedDateTime = dueDateTime.toLocaleString();
+
+        return `
         <div class="task-item" data-status="${task.status}">
             <div class="task-header">
                 <span class="task-title">${task.title}</span>
@@ -79,7 +245,7 @@ function displayTasks(tasks) {
             </div>
             <div class="task-description">${task.description || 'No description'}</div>
             <div class="task-footer">
-                <span class="task-due-date">Due: ${new Date(task.due_date).toLocaleDateString()}</span>
+                <span class="task-due-date">Due: ${formattedDateTime}</span>
                 <div class="task-actions">
                     <button onclick="toggleTaskStatus(${task.id}, '${task.status}')">
                         ${task.status === 'completed' ? 'Undo' : 'Complete'}
@@ -88,7 +254,8 @@ function displayTasks(tasks) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
 }
 
 function filterTasksByStatus(tasks) {
@@ -100,9 +267,10 @@ function filterTasksByStatus(tasks) {
         case 'completed':
             return tasks.filter(task => task.status === 'completed');
         case 'overdue':
-            return tasks.filter(task =>
-                task.status === 'pending' && new Date(task.due_date) < now
-            );
+            return tasks.filter(task => {
+                const dueDateTime = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
+                return task.status === 'pending' && dueDateTime < now;
+            });
         default:
             return tasks;
     }
@@ -111,7 +279,6 @@ function filterTasksByStatus(tasks) {
 function filterTasks(status) {
     currentFilter = status;
 
-    // Update filter buttons
     document.querySelectorAll('.filter-btn').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -127,6 +294,12 @@ function openTaskModal() {
 function closeTaskModal() {
     document.getElementById('taskModal').style.display = 'none';
     document.getElementById('taskForm').reset();
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const currentTime = now.toTimeString().slice(0, 5);
+    document.getElementById('taskDueDate').value = today;
+    document.getElementById('taskDueTime').value = currentTime;
 }
 
 async function handleTaskSubmit(e) {
@@ -136,6 +309,7 @@ async function handleTaskSubmit(e) {
         title: document.getElementById('taskTitle').value,
         description: document.getElementById('taskDescription').value,
         due_date: document.getElementById('taskDueDate').value,
+        due_time: document.getElementById('taskDueTime').value,
         priority: document.getElementById('taskPriority').value
     };
 
@@ -159,6 +333,43 @@ async function handleTaskSubmit(e) {
         }
     } catch (error) {
         showNotification('Network error. Please try again.', 'error');
+    }
+}
+
+async function generateAITasks() {
+    try {
+        const response = await fetch(`${API_BASE}/roadmap/user`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+            }
+        });
+
+        if (response.ok) {
+            const roadmaps = await response.json();
+            if (roadmaps.length === 0) {
+                showNotification('Please generate a learning roadmap first!', 'error');
+                return;
+            }
+
+            const latestRoadmap = roadmaps[0];
+            const aiTasksResponse = await fetch(`${API_BASE}/generate-ai-tasks`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+                },
+                body: JSON.stringify({ roadmap_data: latestRoadmap.roadmap_data })
+            });
+
+            if (aiTasksResponse.ok) {
+                showNotification('AI tasks generated successfully!', 'success');
+                loadTasks();
+            } else {
+                showNotification('Failed to generate AI tasks', 'error');
+            }
+        }
+    } catch (error) {
+        showNotification('Error generating AI tasks', 'error');
     }
 }
 
@@ -226,7 +437,7 @@ async function getCareerAdvice() {
 
         if (response.ok) {
             const data = await response.json();
-            adviceDiv.innerHTML = `<div style="white-space: pre-wrap;">${data.advice}</div>`;
+            adviceDiv.innerHTML = data.advice;
         } else {
             adviceDiv.innerHTML = '<p>Sorry, I couldn\'t generate advice right now. Please try again.</p>';
         }
@@ -249,7 +460,7 @@ async function handleRoadmapSubmit(e) {
 
     const formData = {
         career_goal: document.getElementById('careerGoal').value,
-        current_level: document.getElementById('currentLevel').value,
+        current_level: document.getElementById('currentSkill').value,
         timeframe: document.getElementById('timeframe').value,
         specific_interests: document.getElementById('specificInterests').value
     };
@@ -278,16 +489,63 @@ async function handleRoadmapSubmit(e) {
     }
 }
 
+// ENHANCED: Display roadmap with better formatting
 function displayRoadmap(roadmapData) {
     const container = document.getElementById('roadmapContainer');
 
     let roadmapHTML = `
         <div class="roadmap-header">
             <h3>${roadmapData.roadmap_title}</h3>
-            <p>Duration: ${roadmapData.total_duration}</p>
+            <p><strong>Duration:</strong> ${roadmapData.total_duration}</p>
         </div>
-        <div class="roadmap-phases">
     `;
+
+    if (roadmapData.overview) {
+        roadmapHTML += `
+            <div class="roadmap-overview">
+                <h4>📋 Overview</h4>
+                <div class="overview-grid">
+                    <div class="overview-item">
+                        <strong>Starting Level:</strong> ${roadmapData.overview.starting_level || roadmapData.overview.current_level}
+                    </div>
+                    <div class="overview-item">
+                        <strong>Target Role:</strong> ${roadmapData.overview.target_role}
+                    </div>
+                    <div class="overview-item">
+                        <strong>Duration:</strong> ${roadmapData.overview.duration}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    if (roadmapData.skills_matrix) {
+        roadmapHTML += `
+            <div class="skills-matrix">
+                <h4>🎯 Skills Matrix</h4>
+                <div class="skills-categories">
+                    <div class="skill-category">
+                        <h5>Technical Skills</h5>
+                        <div class="skills-list">
+                            ${roadmapData.skills_matrix.technical_skills.map(skill => 
+                                `<span class="skill-tag">${skill}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    <div class="skill-category">
+                        <h5>Soft Skills</h5>
+                        <div class="skills-list">
+                            ${roadmapData.skills_matrix.soft_skills.map(skill => 
+                                `<span class="skill-tag">${skill}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    roadmapHTML += '<div class="roadmap-phases">';
 
     roadmapData.phases.forEach((phase, index) => {
         roadmapHTML += `
@@ -307,7 +565,7 @@ function displayRoadmap(roadmapData) {
                         <h5>Resources:</h5>
                         <ul>
                             ${phase.resources.map(resource => 
-                                `<li><strong>${resource.name}</strong> (${resource.type})</li>`
+                                `<li><strong>${resource.name}</strong> (${resource.type})${resource.description ? ' - ' + resource.description : ''}</li>`
                             ).join('')}
                         </ul>
                     </div>
@@ -317,6 +575,18 @@ function displayRoadmap(roadmapData) {
                             ${phase.projects.map(project => `<li>${project}</li>`).join('')}
                         </ul>
                     </div>
+                    <div class="milestones-section">
+                        <h5>Key Milestones:</h5>
+                        <ul>
+                            ${phase.milestones.map(milestone => `<li>${milestone}</li>`).join('')}
+                        </ul>
+                    </div>
+                    ${phase.assessment ? `
+                        <div class="assessment-section">
+                            <h5>Assessment:</h5>
+                            <p>${phase.assessment}</p>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -371,11 +641,15 @@ function showNotification(message, type) {
 window.onclick = function(event) {
     const taskModal = document.getElementById('taskModal');
     const roadmapModal = document.getElementById('roadmapModal');
+    const studentCardModal = document.getElementById('studentCardModal');
 
     if (event.target === taskModal) {
         closeTaskModal();
     }
     if (event.target === roadmapModal) {
         closeRoadmapModal();
+    }
+    if (event.target === studentCardModal) {
+        closeStudentCard();
     }
 }
