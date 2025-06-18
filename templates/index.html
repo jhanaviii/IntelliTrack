@@ -13,17 +13,86 @@
                 <h1>🎯 IntelliTrack Dashboard</h1>
                 <div class="user-info">
                     <span id="userName">Welcome!</span>
+                    <button onclick="showStudentCard()" class="profile-btn">Profile</button>
                     <button onclick="logout()" class="logout-btn">Logout</button>
                 </div>
             </div>
         </header>
 
         <div class="dashboard-grid">
+            <!-- Student ID Card Modal - FIXED UI -->
+            <div id="studentCardModal" class="modal">
+                <div class="modal-content student-id-card">
+                    <div class="card-close">
+                        <button onclick="closeStudentCard()" class="close-btn">&times;</button>
+                    </div>
+                    <div class="id-card">
+                        <div class="card-header-section">
+                            <div class="institution-logo">🎓</div>
+                            <div class="institution-info">
+                                <h2 id="displayInstitution">Institution Name</h2>
+                                <p>Student Identification Card</p>
+                            </div>
+                        </div>
+
+                        <div class="card-main-content">
+                            <div class="student-photo">
+                                <div class="photo-placeholder">📸</div>
+                                <button class="upload-photo-btn">Upload Photo</button>
+                            </div>
+
+                            <div class="student-details">
+                                <div class="detail-row">
+                                    <label>Student Name:</label>
+                                    <input type="text" id="cardName" placeholder="Enter full name">
+                                </div>
+                                <div class="detail-row">
+                                    <label>Student ID:</label>
+                                    <input type="text" id="cardStudentId" placeholder="Enter student ID">
+                                </div>
+                                <div class="detail-row">
+                                    <label>Course/Grade:</label>
+                                    <input type="text" id="cardCourse" readonly>
+                                </div>
+                                <div class="detail-row">
+                                    <label>Department:</label>
+                                    <input type="text" id="cardDepartment" readonly>
+                                </div>
+                                <div class="detail-row">
+                                    <label>Phone:</label>
+                                    <input type="text" id="cardPhone" placeholder="Enter phone number">
+                                </div>
+                                <div class="detail-row">
+                                    <label>Emergency Contact:</label>
+                                    <input type="text" id="cardEmergencyContact" placeholder="Enter emergency contact">
+                                </div>
+                            </div>
+
+                            <div class="card-footer-section">
+                                <div class="qr-section">
+                                    <div class="qr-code">
+                                        <div class="qr-pattern">⬛⬜⬛⬜<br>⬜⬛⬜⬛<br>⬛⬜⬛⬜<br>⬜⬛⬜⬛</div>
+                                    </div>
+                                    <p>Scan for verification</p>
+                                </div>
+                                <div class="validity">
+                                    <p><strong>Valid Until:</strong> <span id="cardValidity">2026-07-31</span></p>
+                                    <button onclick="saveStudentCard()" class="save-card-btn">💾 Save Profile</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Task Management Section -->
             <div class="task-section">
                 <div class="section-header">
                     <h2>📋 Task Manager</h2>
-                    <button class="add-task-btn" onclick="openTaskModal()">+ Add Task</button>
+                    <div class="task-header-buttons">
+                        <button class="add-task-btn" onclick="openTaskModal()">+ Add Task</button>
+                        <button class="ai-task-btn" onclick="generateAITasks()">🤖 Generate AI Tasks</button>
+                    </div>
                 </div>
                 <div class="task-filters">
                     <button class="filter-btn active" onclick="filterTasks('all')">All</button>
@@ -33,6 +102,31 @@
                 </div>
                 <div id="taskContainer" class="task-container">
                     <!-- Tasks will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Pomodoro Timer Section -->
+            <div class="pomodoro-section">
+                <div class="section-header">
+                    <h2>🍅 Focus Mode - Pomodoro</h2>
+                </div>
+                <div class="pomodoro-timer">
+                    <div class="timer-display">
+                        <span id="timerMinutes">25</span>:<span id="timerSeconds">00</span>
+                    </div>
+                    <div class="timer-controls">
+                        <button id="startBtn" onclick="startPomodoro()">Start</button>
+                        <button id="pauseBtn" onclick="pausePomodoro()" disabled>Pause</button>
+                        <button id="resetBtn" onclick="resetPomodoro()">Reset</button>
+                    </div>
+                    <div class="timer-settings">
+                        <label>Work: <input type="number" id="workMinutes" value="25" min="1" max="60"> min</label>
+                        <label>Break: <input type="number" id="breakMinutes" value="5" min="1" max="30"> min</label>
+                    </div>
+                    <div class="pomodoro-stats">
+                        <div class="stat">Sessions: <span id="pomodoroSessions">0</span></div>
+                        <div class="stat">Status: <span id="pomodoroStatus">Ready</span></div>
+                    </div>
                 </div>
             </div>
 
@@ -99,7 +193,10 @@
             <form id="taskForm">
                 <input type="text" id="taskTitle" placeholder="Task Title" required>
                 <textarea id="taskDescription" placeholder="Task Description"></textarea>
-                <input type="date" id="taskDueDate" required>
+                <div class="datetime-group">
+                    <input type="date" id="taskDueDate" required>
+                    <input type="time" id="taskDueTime" required>
+                </div>
                 <select id="taskPriority">
                     <option value="low">Low Priority</option>
                     <option value="medium" selected>Medium Priority</option>
@@ -113,39 +210,48 @@
         </div>
     </div>
 
-    <!-- Roadmap Generation Modal -->
+    <!-- FIXED Roadmap Generation Modal -->
     <div id="roadmapModal" class="modal">
-        <div class="modal-content">
-            <h3>Generate Learning Roadmap</h3>
+        <div class="modal-content roadmap-modal">
+            <h3>🗺️ Generate Learning Roadmap</h3>
             <form id="roadmapForm">
-                <select id="careerGoal" required>
-                    <option value="">Select Career Goal</option>
-                    <option value="Software Engineer">Software Engineer</option>
-                    <option value="Data Scientist">Data Scientist</option>
-                    <option value="AI/ML Engineer">AI/ML Engineer</option>
-                    <option value="Web Developer">Web Developer</option>
-                    <option value="Mobile Developer">Mobile Developer</option>
-                    <option value="DevOps Engineer">DevOps Engineer</option>
-                    <option value="Cybersecurity Specialist">Cybersecurity Specialist</option>
-                    <option value="Product Manager">Product Manager</option>
-                </select>
-                <select id="currentLevel" required>
-                    <option value="">Current Skill Level</option>
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                </select>
-                <select id="timeframe" required>
-                    <option value="">Target Timeframe</option>
-                    <option value="3 months">3 months</option>
-                    <option value="6 months">6 months</option>
-                    <option value="1 year">1 year</option>
-                    <option value="2 years">2 years</option>
-                </select>
-                <textarea id="specificInterests" placeholder="Specific interests or technologies you want to focus on..."></textarea>
+                <div class="form-group">
+                    <label>Career Goal</label>
+                    <select id="careerGoal" required>
+                        <option value="">Select Career Goal</option>
+                        <!-- Options will be populated based on education level -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Current Skill</label>
+                    <select id="currentSkill" required>
+                        <option value="">Current Skill Level</option>
+                        <option value="Beginner">Beginner</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Advanced">Advanced</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Target Timeframe</label>
+                    <select id="timeframe" required>
+                        <option value="">Select Timeframe</option>
+                        <option value="3 months">3 months</option>
+                        <option value="6 months">6 months</option>
+                        <option value="1 year">1 year</option>
+                        <option value="2 years">2 years</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Current Skills & Interests</label>
+                    <textarea id="specificInterests" placeholder="List your current skills and specific interests (e.g., JavaScript, Python, React, Machine Learning, etc.)" rows="4"></textarea>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" onclick="closeRoadmapModal()">Cancel</button>
-                    <button type="submit">Generate Roadmap</button>
+                    <button type="submit">🚀 Generate Roadmap</button>
                 </div>
             </form>
         </div>
