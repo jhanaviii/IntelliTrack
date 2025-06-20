@@ -5,6 +5,7 @@ let pomodoroTime = 25 * 60;
 let isWorkSession = true;
 let pomodoroSessions = 0;
 let isPaused = false;
+let skillsTags = []; // For tag-based skills input
 
 document.addEventListener('DOMContentLoaded', function() {
     if (checkAuth()) {
@@ -12,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTasks();
         loadUserRoadmaps();
         updateAnalytics();
-        setupCareerGoals(); // Setup education-specific career goals
+        setupSkillsTagsInput();
 
         document.getElementById('taskForm').addEventListener('submit', handleTaskSubmit);
         document.getElementById('roadmapForm').addEventListener('submit', handleRoadmapSubmit);
@@ -46,56 +47,96 @@ function logout() {
     window.location.href = '/auth';
 }
 
-// FIXED: Setup education-specific career goals
-function setupCareerGoals() {
-    const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
-    const careerGoalSelect = document.getElementById('careerGoal');
+// Enhanced photo upload functionality
+function handlePhotoUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const photoPlaceholder = document.getElementById('photoPlaceholder');
+            photoPlaceholder.innerHTML = `<img src="${e.target.result}" alt="Student Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
 
-    let options = '';
-
-    if (userData.education_level === 'school') {
-        // School student career options
-        options = `
-            <option value="">Select Career Goal</option>
-            <option value="Engineering Student">Engineering Student</option>
-            <option value="Medical Student">Medical Student</option>
-            <option value="Commerce Student">Commerce Student</option>
-            <option value="Arts Student">Arts Student</option>
-            <option value="Science Student">Science Student</option>
-            <option value="Competitive Exam Preparation">Competitive Exam Preparation</option>
-            <option value="Skill Development">Skill Development</option>
-        `;
-    } else if (userData.education_level === 'college') {
-        // College student career options
-        options = `
-            <option value="">Select Career Goal</option>
-            <option value="Software Engineer">Software Engineer</option>
-            <option value="Data Scientist">Data Scientist</option>
-            <option value="AI/ML Engineer">AI/ML Engineer</option>
-            <option value="Web Developer">Web Developer</option>
-            <option value="Mobile Developer">Mobile Developer</option>
-            <option value="DevOps Engineer">DevOps Engineer</option>
-            <option value="Cybersecurity Specialist">Cybersecurity Specialist</option>
-            <option value="Product Manager">Product Manager</option>
-            <option value="Business Analyst">Business Analyst</option>
-            <option value="Research Scientist">Research Scientist</option>
-            <option value="Startup Founder">Startup Founder</option>
-        `;
-    } else {
-        // Default options
-        options = `
-            <option value="">Select Career Goal</option>
-            <option value="Software Engineer">Software Engineer</option>
-            <option value="Data Scientist">Data Scientist</option>
-            <option value="Web Developer">Web Developer</option>
-            <option value="Student">Student</option>
-        `;
+            // Save to localStorage
+            localStorage.setItem('student_photo', e.target.result);
+        };
+        reader.readAsDataURL(file);
     }
-
-    careerGoalSelect.innerHTML = options;
 }
 
-// FIXED: Student Card Functions
+// Enhanced skills tags input
+function setupSkillsTagsInput() {
+    const input = document.getElementById('skillsInterestsInput');
+    const tagsDisplay = document.getElementById('tagsDisplay');
+
+    if (input) {
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const value = input.value.trim();
+                if (value && !skillsTags.includes(value)) {
+                    skillsTags.push(value);
+                    renderSkillsTags();
+                    input.value = '';
+                }
+            }
+        });
+    }
+}
+
+function renderSkillsTags() {
+    const tagsDisplay = document.getElementById('tagsDisplay');
+    if (tagsDisplay) {
+        tagsDisplay.innerHTML = skillsTags.map((tag, index) =>
+            `<span class="skill-tag">
+                ${tag}
+                <button type="button" class="tag-remove" onclick="removeSkillTag(${index})">×</button>
+            </span>`
+        ).join('');
+    }
+}
+
+function removeSkillTag(index) {
+    skillsTags.splice(index, 1);
+    renderSkillsTags();
+}
+
+// AI timeline generation for tasks
+async function generateTaskTimeline() {
+    const title = document.getElementById('taskTitle').value;
+    const description = document.getElementById('taskDescription').value;
+    const priority = document.getElementById('taskPriority').value;
+
+    if (!title) {
+        showNotification('Please enter a task title first', 'error');
+        return;
+    }
+
+    const resultDiv = document.getElementById('aiTimelineResult');
+    resultDiv.innerHTML = '🤖 Analyzing task and generating timeline estimate...';
+    resultDiv.classList.add('show');
+
+    try {
+        const response = await fetch(`${API_BASE}/tasks/ai-timeline`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+            },
+            body: JSON.stringify({ title, description, priority })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            resultDiv.innerHTML = data.timeline;
+        } else {
+            resultDiv.innerHTML = '⚠️ Could not generate timeline estimate. Please try again.';
+        }
+    } catch (error) {
+        resultDiv.innerHTML = '❌ Network error. Please check your connection.';
+    }
+}
+
+// Enhanced Student Card Functions
 function showStudentCard() {
     const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
 
@@ -110,6 +151,12 @@ function showStudentCard() {
     document.getElementById('cardStudentId').value = profileData.student_id || '';
     document.getElementById('cardPhone').value = profileData.phone || '';
     document.getElementById('cardEmergencyContact').value = profileData.emergency_contact || '';
+
+    // Load saved photo
+    const savedPhoto = localStorage.getItem('student_photo');
+    if (savedPhoto) {
+        document.getElementById('photoPlaceholder').innerHTML = `<img src="${savedPhoto}" alt="Student Photo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">`;
+    }
 
     document.getElementById('studentCardModal').style.display = 'flex';
 }
@@ -223,67 +270,65 @@ async function loadTasks() {
     }
 }
 
+// ENHANCED: Task display with auto-removal from All when completed
 function displayTasks(tasks) {
     const container = document.getElementById('taskContainer');
-
     if (tasks.length === 0) {
-        container.innerHTML = '<p style="text-align: center; opacity: 0.7;">No tasks found. Add your first task!</p>';
+        container.innerHTML = '<div class="task-placeholder"><p>📝 No tasks found. Add your first task!</p></div>';
         return;
     }
 
     const filteredTasks = filterTasksByStatus(tasks);
-
     container.innerHTML = filteredTasks.map(task => {
         const dueDateTime = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
         const formattedDateTime = dueDateTime.toLocaleString();
 
         return `
-        <div class="task-item" data-status="${task.status}">
-            <div class="task-header">
-                <span class="task-title">${task.title}</span>
-                <span class="task-priority priority-${task.priority}">${task.priority.toUpperCase()}</span>
-            </div>
-            <div class="task-description">${task.description || 'No description'}</div>
-            <div class="task-footer">
-                <span class="task-due-date">Due: ${formattedDateTime}</span>
-                <div class="task-actions">
-                    <button onclick="toggleTaskStatus(${task.id}, '${task.status}')">
-                        ${task.status === 'completed' ? 'Undo' : 'Complete'}
-                    </button>
-                    <button onclick="deleteTask(${task.id})">Delete</button>
+            <div class="task-item">
+                <div class="task-header">
+                    <span class="task-title">${task.title}</span>
+                    <span class="task-priority priority-${task.priority}">${task.priority.toUpperCase()}</span>
+                </div>
+                <div class="task-description">${task.description || 'No description'}</div>
+                <div class="task-footer">
+                    <span class="task-due-date">📅 Due: ${formattedDateTime}</span>
+                    <div class="task-actions">
+                        ${task.status === 'pending' ? 
+                            `<button onclick="completeTask(${task.id})">✅ Complete</button>` : 
+                            `<span style="color: #00ff88;">✅ Completed</span>`
+                        }
+                        <button onclick="deleteTask(${task.id})">🗑️ Delete</button>
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
     }).join('');
 }
 
 function filterTasksByStatus(tasks) {
     const now = new Date();
 
-    switch (currentFilter) {
+    switch(currentFilter) {
         case 'pending':
             return tasks.filter(task => task.status === 'pending');
         case 'completed':
             return tasks.filter(task => task.status === 'completed');
         case 'overdue':
             return tasks.filter(task => {
-                const dueDateTime = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
-                return task.status === 'pending' && dueDateTime < now;
+                const dueDate = new Date(task.due_date + 'T' + (task.due_time || '23:59'));
+                return task.status === 'pending' && dueDate < now;
             });
+        case 'all':
         default:
-            return tasks;
+            // FIXED: For 'all' filter, exclude completed tasks to auto-remove them
+            return tasks.filter(task => task.status !== 'completed');
     }
 }
 
-function filterTasks(status) {
-    currentFilter = status;
-
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    event.target.classList.add('active');
-
+function filterTasks(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[onclick="filterTasks('${filter}')"]`).classList.add('active');
     loadTasks();
 }
 
@@ -294,12 +339,7 @@ function openTaskModal() {
 function closeTaskModal() {
     document.getElementById('taskModal').style.display = 'none';
     document.getElementById('taskForm').reset();
-
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().slice(0, 5);
-    document.getElementById('taskDueDate').value = today;
-    document.getElementById('taskDueTime').value = currentTime;
+    document.getElementById('aiTimelineResult').classList.remove('show');
 }
 
 async function handleTaskSubmit(e) {
@@ -324,106 +364,67 @@ async function handleTaskSubmit(e) {
         });
 
         if (response.ok) {
-            showNotification('Task added successfully!', 'success');
             closeTaskModal();
             loadTasks();
+            showNotification('Task added successfully!', 'success');
         } else {
-            const error = await response.json();
-            showNotification(error.error || 'Failed to add task', 'error');
+            showNotification('Failed to add task', 'error');
         }
     } catch (error) {
         showNotification('Network error. Please try again.', 'error');
     }
 }
 
-async function generateAITasks() {
-    try {
-        const response = await fetch(`${API_BASE}/roadmap/user`, {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('user_token')}`
-            }
-        });
-
-        if (response.ok) {
-            const roadmaps = await response.json();
-            if (roadmaps.length === 0) {
-                showNotification('Please generate a learning roadmap first!', 'error');
-                return;
-            }
-
-            const latestRoadmap = roadmaps[0];
-            const aiTasksResponse = await fetch(`${API_BASE}/generate-ai-tasks`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('user_token')}`
-                },
-                body: JSON.stringify({ roadmap_data: latestRoadmap.roadmap_data })
-            });
-
-            if (aiTasksResponse.ok) {
-                showNotification('AI tasks generated successfully!', 'success');
-                loadTasks();
-            } else {
-                showNotification('Failed to generate AI tasks', 'error');
-            }
-        }
-    } catch (error) {
-        showNotification('Error generating AI tasks', 'error');
-    }
-}
-
-async function toggleTaskStatus(taskId, currentStatus) {
-    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-
+async function completeTask(taskId) {
     try {
         const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
-            method: 'PUT',
+            method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${localStorage.getItem('user_token')}`
             },
-            body: JSON.stringify({ status: newStatus })
+            body: JSON.stringify({ status: 'completed' })
         });
 
         if (response.ok) {
-            showNotification('Task updated successfully!', 'success');
             loadTasks();
+            showNotification('Task completed!', 'success');
         }
     } catch (error) {
-        showNotification('Error updating task', 'error');
+        showNotification('Error completing task', 'error');
     }
 }
 
 async function deleteTask(taskId) {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+    if (confirm('Are you sure you want to delete this task?')) {
+        try {
+            const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+                }
+            });
 
-    try {
-        const response = await fetch(`${API_BASE}/tasks/${taskId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+            if (response.ok) {
+                loadTasks();
+                showNotification('Task deleted!', 'success');
             }
-        });
-
-        if (response.ok) {
-            showNotification('Task deleted successfully!', 'success');
-            loadTasks();
+        } catch (error) {
+            showNotification('Error deleting task', 'error');
         }
-    } catch (error) {
-        showNotification('Error deleting task', 'error');
     }
 }
 
+// ENHANCED: Career advice with better formatting
 async function getCareerAdvice() {
     const input = document.getElementById('careerInput').value.trim();
     if (!input) {
-        showNotification('Please enter your interests and goals', 'error');
+        showNotification('Please enter your question or concern', 'error');
         return;
     }
 
     const adviceDiv = document.getElementById('careerAdvice');
-    adviceDiv.innerHTML = '<p>🤖 Generating personalized career advice...</p>';
+    adviceDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>🤖 Generating comprehensive career guidance...</p></div>';
 
     try {
         const response = await fetch(`${API_BASE}/career-advice`, {
@@ -439,10 +440,10 @@ async function getCareerAdvice() {
             const data = await response.json();
             adviceDiv.innerHTML = data.advice;
         } else {
-            adviceDiv.innerHTML = '<p>Sorry, I couldn\'t generate advice right now. Please try again.</p>';
+            adviceDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>⚠️ Sorry, I couldn\'t generate advice right now. Please try again.</p></div>';
         }
     } catch (error) {
-        adviceDiv.innerHTML = '<p>Network error. Please check your connection and try again.</p>';
+        adviceDiv.innerHTML = '<div style="text-align: center; padding: 2rem;"><p>❌ Network error. Please check your connection and try again.</p></div>';
     }
 }
 
@@ -453,16 +454,19 @@ function openRoadmapModal() {
 function closeRoadmapModal() {
     document.getElementById('roadmapModal').style.display = 'none';
     document.getElementById('roadmapForm').reset();
+    skillsTags = [];
+    renderSkillsTags();
 }
 
+// ENHANCED: Roadmap submission with tag-based skills
 async function handleRoadmapSubmit(e) {
     e.preventDefault();
 
     const formData = {
-        career_goal: document.getElementById('careerGoal').value,
+        career_goal: document.getElementById('careerGoalInput').value,
         current_level: document.getElementById('currentSkill').value,
         timeframe: document.getElementById('timeframe').value,
-        specific_interests: document.getElementById('specificInterests').value
+        skills: skillsTags // Send as array
     };
 
     try {
@@ -476,11 +480,10 @@ async function handleRoadmapSubmit(e) {
         });
 
         const roadmapData = await response.json();
-
         if (response.ok) {
             displayRoadmap(roadmapData);
             closeRoadmapModal();
-            showNotification('Roadmap generated successfully!', 'success');
+            showNotification('🚀 Roadmap generated successfully!', 'success');
         } else {
             showNotification(roadmapData.error || 'Failed to generate roadmap', 'error');
         }
@@ -489,111 +492,9 @@ async function handleRoadmapSubmit(e) {
     }
 }
 
-// ENHANCED: Display roadmap with better formatting
 function displayRoadmap(roadmapData) {
     const container = document.getElementById('roadmapContainer');
-
-    let roadmapHTML = `
-        <div class="roadmap-header">
-            <h3>${roadmapData.roadmap_title}</h3>
-            <p><strong>Duration:</strong> ${roadmapData.total_duration}</p>
-        </div>
-    `;
-
-    if (roadmapData.overview) {
-        roadmapHTML += `
-            <div class="roadmap-overview">
-                <h4>📋 Overview</h4>
-                <div class="overview-grid">
-                    <div class="overview-item">
-                        <strong>Starting Level:</strong> ${roadmapData.overview.starting_level || roadmapData.overview.current_level}
-                    </div>
-                    <div class="overview-item">
-                        <strong>Target Role:</strong> ${roadmapData.overview.target_role}
-                    </div>
-                    <div class="overview-item">
-                        <strong>Duration:</strong> ${roadmapData.overview.duration}
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    if (roadmapData.skills_matrix) {
-        roadmapHTML += `
-            <div class="skills-matrix">
-                <h4>🎯 Skills Matrix</h4>
-                <div class="skills-categories">
-                    <div class="skill-category">
-                        <h5>Technical Skills</h5>
-                        <div class="skills-list">
-                            ${roadmapData.skills_matrix.technical_skills.map(skill => 
-                                `<span class="skill-tag">${skill}</span>`
-                            ).join('')}
-                        </div>
-                    </div>
-                    <div class="skill-category">
-                        <h5>Soft Skills</h5>
-                        <div class="skills-list">
-                            ${roadmapData.skills_matrix.soft_skills.map(skill => 
-                                `<span class="skill-tag">${skill}</span>`
-                            ).join('')}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-
-    roadmapHTML += '<div class="roadmap-phases">';
-
-    roadmapData.phases.forEach((phase, index) => {
-        roadmapHTML += `
-            <div class="phase-card">
-                <div class="phase-header">
-                    <h4>${phase.phase}</h4>
-                    <span class="phase-duration">${phase.duration}</span>
-                </div>
-                <div class="phase-content">
-                    <div class="skills-section">
-                        <h5>Skills to Learn:</h5>
-                        <div class="skills-list">
-                            ${phase.skills.map(skill => `<span class="skill-tag">${skill}</span>`).join('')}
-                        </div>
-                    </div>
-                    <div class="resources-section">
-                        <h5>Resources:</h5>
-                        <ul>
-                            ${phase.resources.map(resource => 
-                                `<li><strong>${resource.name}</strong> (${resource.type})${resource.description ? ' - ' + resource.description : ''}</li>`
-                            ).join('')}
-                        </ul>
-                    </div>
-                    <div class="projects-section">
-                        <h5>Project Ideas:</h5>
-                        <ul>
-                            ${phase.projects.map(project => `<li>${project}</li>`).join('')}
-                        </ul>
-                    </div>
-                    <div class="milestones-section">
-                        <h5>Key Milestones:</h5>
-                        <ul>
-                            ${phase.milestones.map(milestone => `<li>${milestone}</li>`).join('')}
-                        </ul>
-                    </div>
-                    ${phase.assessment ? `
-                        <div class="assessment-section">
-                            <h5>Assessment:</h5>
-                            <p>${phase.assessment}</p>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-        `;
-    });
-
-    roadmapHTML += '</div>';
-    container.innerHTML = roadmapHTML;
+    container.innerHTML = roadmapData.roadmap;
 }
 
 async function loadUserRoadmaps() {
@@ -606,8 +507,10 @@ async function loadUserRoadmaps() {
 
         if (response.ok) {
             const roadmaps = await response.json();
+            // Display latest roadmap if available
             if (roadmaps.length > 0) {
-                displayRoadmap(roadmaps[0].roadmap_data);
+                const latestRoadmap = roadmaps[0];
+                displayRoadmap({ roadmap: latestRoadmap.roadmap_data });
             }
         }
     } catch (error) {
@@ -615,16 +518,25 @@ async function loadUserRoadmaps() {
     }
 }
 
-function updateAnalytics(tasks = []) {
-    const totalTasks = tasks.length;
-    const completedTasks = tasks.filter(task => task.status === 'completed').length;
-    const pendingTasks = tasks.filter(task => task.status === 'pending').length;
-    const productivityScore = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+async function updateAnalytics(tasks = null) {
+    try {
+        const response = await fetch(`${API_BASE}/analytics`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('user_token')}`
+            }
+        });
 
-    document.getElementById('totalTasks').textContent = totalTasks;
-    document.getElementById('completedTasks').textContent = completedTasks;
-    document.getElementById('pendingTasks').textContent = pendingTasks;
-    document.getElementById('productivityScore').textContent = `${productivityScore}%`;
+        if (response.ok) {
+            const analytics = await response.json();
+
+            document.getElementById('totalTasks').textContent = analytics.total_tasks;
+            document.getElementById('completedTasks').textContent = analytics.completed_tasks;
+            document.getElementById('pendingTasks').textContent = analytics.pending_tasks;
+            document.getElementById('productivityScore').textContent = analytics.productivity_score + '%';
+        }
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
 }
 
 function showNotification(message, type) {
@@ -637,19 +549,87 @@ function showNotification(message, type) {
     }, 3000);
 }
 
-// Close modals when clicking outside
+// Click outside modal to close
 window.onclick = function(event) {
-    const taskModal = document.getElementById('taskModal');
-    const roadmapModal = document.getElementById('roadmapModal');
-    const studentCardModal = document.getElementById('studentCardModal');
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
 
-    if (event.target === taskModal) {
-        closeTaskModal();
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl/Cmd + N to add new task
+    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        openTaskModal();
     }
-    if (event.target === roadmapModal) {
-        closeRoadmapModal();
+
+    // Escape to close modals
+    if (e.key === 'Escape') {
+        const openModal = document.querySelector('.modal[style*="flex"]');
+        if (openModal) {
+            openModal.style.display = 'none';
+        }
     }
-    if (event.target === studentCardModal) {
-        closeStudentCard();
+});
+
+// Auto-save functionality for forms
+let autoSaveTimeout;
+function autoSave(formId, storageKey) {
+    clearTimeout(autoSaveTimeout);
+    autoSaveTimeout = setTimeout(() => {
+        const form = document.getElementById(formId);
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+        localStorage.setItem(storageKey, JSON.stringify(data));
+    }, 1000);
+}
+
+// Load auto-saved data
+function loadAutoSavedData(formId, storageKey) {
+    const savedData = localStorage.getItem(storageKey);
+    if (savedData) {
+        const data = JSON.parse(savedData);
+        const form = document.getElementById(formId);
+        Object.keys(data).forEach(key => {
+            const input = form.querySelector(`[name="${key}"]`);
+            if (input) {
+                input.value = data[key];
+            }
+        });
     }
+}
+
+// Initialize auto-save for task form
+document.addEventListener('DOMContentLoaded', function() {
+    const taskForm = document.getElementById('taskForm');
+    if (taskForm) {
+        taskForm.addEventListener('input', () => autoSave('taskForm', 'task_draft'));
+        loadAutoSavedData('taskForm', 'task_draft');
+    }
+});
+
+// Service Worker registration for offline support
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/static/sw.js')
+            .then(function(registration) {
+                console.log('ServiceWorker registration successful');
+            })
+            .catch(function(err) {
+                console.log('ServiceWorker registration failed');
+            });
+    });
+}
+
+// Export functions for testing
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        filterTasksByStatus,
+        updateTimerDisplay,
+        formatDateTime: (date, time) => new Date(date + 'T' + (time || '23:59')).toLocaleString()
+    };
 }
