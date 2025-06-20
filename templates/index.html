@@ -3,167 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IntelliTrack Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>IntelliTrack - Student Productivity & Career Guidance</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <header class="header">
             <div class="header-content">
-                <h1>🎯 IntelliTrack Dashboard</h1>
+                <h1>🎓 IntelliTrack</h1>
                 <div class="user-info">
-                    <span id="userName">Welcome!</span>
-                    <button onclick="showStudentCard()" class="profile-btn">Profile</button>
-                    <button onclick="logout()" class="logout-btn">Logout</button>
+                    <span id="userName">Welcome, Student!</span>
+                    <button class="profile-btn" onclick="showStudentCard()">👤 Student ID</button>
+                    <button class="logout-btn" onclick="logout()">🚪 Logout</button>
                 </div>
             </div>
         </header>
 
+        <!-- Dashboard Grid -->
         <div class="dashboard-grid">
-            <!-- Student ID Card Modal - FIXED UI -->
-            <div id="studentCardModal" class="modal">
-                <div class="modal-content student-id-card">
-                    <div class="card-close">
-                        <button onclick="closeStudentCard()" class="close-btn">&times;</button>
-                    </div>
-                    <div class="id-card">
-                        <div class="card-header-section">
-                            <div class="institution-logo">🎓</div>
-                            <div class="institution-info">
-                                <h2 id="displayInstitution">Institution Name</h2>
-                                <p>Student Identification Card</p>
-                            </div>
-                        </div>
-
-                        <div class="card-main-content">
-                            <div class="student-photo">
-                                <div class="photo-placeholder">📸</div>
-                                <button class="upload-photo-btn">Upload Photo</button>
-                            </div>
-
-                            <div class="student-details">
-                                <div class="detail-row">
-                                    <label>Student Name:</label>
-                                    <input type="text" id="cardName" placeholder="Enter full name">
-                                </div>
-                                <div class="detail-row">
-                                    <label>Student ID:</label>
-                                    <input type="text" id="cardStudentId" placeholder="Enter student ID">
-                                </div>
-                                <div class="detail-row">
-                                    <label>Course/Grade:</label>
-                                    <input type="text" id="cardCourse" readonly>
-                                </div>
-                                <div class="detail-row">
-                                    <label>Department:</label>
-                                    <input type="text" id="cardDepartment" readonly>
-                                </div>
-                                <div class="detail-row">
-                                    <label>Phone:</label>
-                                    <input type="text" id="cardPhone" placeholder="Enter phone number">
-                                </div>
-                                <div class="detail-row">
-                                    <label>Emergency Contact:</label>
-                                    <input type="text" id="cardEmergencyContact" placeholder="Enter emergency contact">
-                                </div>
-                            </div>
-
-                            <div class="card-footer-section">
-                                <div class="qr-section">
-                                    <div class="qr-code">
-                                        <div class="qr-pattern">⬛⬜⬛⬜<br>⬜⬛⬜⬛<br>⬛⬜⬛⬜<br>⬜⬛⬜⬛</div>
-                                    </div>
-                                    <p>Scan for verification</p>
-                                </div>
-                                <div class="validity">
-                                    <p><strong>Valid Until:</strong> <span id="cardValidity">2026-07-31</span></p>
-                                    <button onclick="saveStudentCard()" class="save-card-btn">💾 Save Profile</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Task Management Section -->
-            <div class="task-section">
+            <!-- Task Manager Section -->
+            <section class="task-section">
                 <div class="section-header">
                     <h2>📋 Task Manager</h2>
                     <div class="task-header-buttons">
-                        <button class="add-task-btn" onclick="openTaskModal()">+ Add Task</button>
-                        <button class="ai-task-btn" onclick="generateAITasks()">🤖 Generate AI Tasks</button>
+                        <button class="add-task-btn" onclick="openTaskModal()">➕ Add New Task</button>
+                        <!-- REMOVED: AI Generate Tasks button -->
                     </div>
                 </div>
+
                 <div class="task-filters">
                     <button class="filter-btn active" onclick="filterTasks('all')">All</button>
                     <button class="filter-btn" onclick="filterTasks('pending')">Pending</button>
                     <button class="filter-btn" onclick="filterTasks('completed')">Completed</button>
                     <button class="filter-btn" onclick="filterTasks('overdue')">Overdue</button>
                 </div>
-                <div id="taskContainer" class="task-container">
-                    <!-- Tasks will be loaded here -->
+
+                <div class="task-container" id="taskContainer">
+                    <div class="task-placeholder">
+                        <p>📝 No tasks found. Add your first task!</p>
+                    </div>
                 </div>
-            </div>
+            </section>
 
             <!-- Pomodoro Timer Section -->
-            <div class="pomodoro-section">
+            <section class="pomodoro-section">
                 <div class="section-header">
-                    <h2>🍅 Focus Mode - Pomodoro</h2>
+                    <h2>🍅 Pomodoro Timer</h2>
                 </div>
+
                 <div class="pomodoro-timer">
                     <div class="timer-display">
                         <span id="timerMinutes">25</span>:<span id="timerSeconds">00</span>
                     </div>
+
                     <div class="timer-controls">
-                        <button id="startBtn" onclick="startPomodoro()">Start</button>
-                        <button id="pauseBtn" onclick="pausePomodoro()" disabled>Pause</button>
-                        <button id="resetBtn" onclick="resetPomodoro()">Reset</button>
+                        <button onclick="startPomodoro()" id="startBtn">▶️ Start</button>
+                        <button onclick="pausePomodoro()" id="pauseBtn" disabled>⏸️ Pause</button>
+                        <button onclick="resetPomodoro()">🔄 Reset</button>
                     </div>
+
                     <div class="timer-settings">
-                        <label>Work: <input type="number" id="workMinutes" value="25" min="1" max="60"> min</label>
-                        <label>Break: <input type="number" id="breakMinutes" value="5" min="1" max="30"> min</label>
+                        <label>
+                            Work: <input type="number" id="workMinutes" value="25" min="1" max="60"> min
+                        </label>
+                        <label>
+                            Break: <input type="number" id="breakMinutes" value="5" min="1" max="30"> min
+                        </label>
                     </div>
+
                     <div class="pomodoro-stats">
-                        <div class="stat">Sessions: <span id="pomodoroSessions">0</span></div>
-                        <div class="stat">Status: <span id="pomodoroStatus">Ready</span></div>
+                        <div class="stat">
+                            Status: <span id="pomodoroStatus">Ready</span>
+                        </div>
+                        <div class="stat">
+                            Sessions: <span id="pomodoroSessions">0</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Career Counseling Section -->
-            <div class="career-section">
+            <!-- AI Career Counselor Section -->
+            <section class="career-section">
                 <div class="section-header">
                     <h2>🤖 AI Career Counselor</h2>
                 </div>
-                <div class="career-input-area">
-                    <textarea id="careerInput" placeholder="Tell me about your interests, skills, academic background, and career goals..."></textarea>
-                    <button onclick="getCareerAdvice()" class="advice-btn">Get AI Advice</button>
-                </div>
-                <div id="careerAdvice" class="career-advice">
-                    <p>Share your interests and goals to receive personalized career guidance!</p>
-                </div>
-            </div>
 
-            <!-- Learning Roadmaps Section -->
-            <div class="roadmap-section">
-                <div class="section-header">
-                    <h2>🗺️ Learning Roadmaps</h2>
-                    <button class="generate-roadmap-btn" onclick="openRoadmapModal()">
-                        Generate Roadmap
-                    </button>
+                <div class="career-input-area">
+                    <textarea id="careerInput" placeholder="Ask me anything about your career, studies, or goals! For example: 'Give me a GATE preparation strategy for 3 months' or 'What skills should I develop for software engineering?'"></textarea>
+                    <button class="advice-btn" onclick="getCareerAdvice()">💡 Get AI Guidance</button>
                 </div>
-                <div id="roadmapContainer" class="roadmap-container">
-                    <div class="roadmap-placeholder">
-                        <p>Generate your personalized learning roadmap based on your career goals</p>
-                    </div>
+
+                <div class="career-advice" id="careerAdvice">
+                    <p>👋 Hi! I'm your AI career counselor. Share your questions, goals, or concerns, and I'll provide personalized guidance to help you succeed!</p>
                 </div>
-            </div>
+            </section>
 
             <!-- Analytics Section -->
-            <div class="analytics-section">
+            <section class="analytics-section">
                 <div class="section-header">
-                    <h2>📊 Progress Analytics</h2>
+                    <h2>📊 Analytics</h2>
                 </div>
+
                 <div class="analytics-grid">
                     <div class="stat-card">
                         <h3 id="totalTasks">0</h3>
@@ -182,26 +123,50 @@
                         <p>Productivity</p>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
+
+        <!-- Learning Roadmaps Section -->
+        <section class="roadmap-section">
+            <div class="section-header">
+                <h2>🗺️ Learning Roadmaps</h2>
+                <button class="generate-roadmap-btn" onclick="openRoadmapModal()">🚀 Generate Roadmap</button>
+            </div>
+
+            <div class="roadmap-container" id="roadmapContainer">
+                <div class="roadmap-placeholder">
+                    <p>🎯 Generate your personalized learning roadmap based on your career goals!</p>
+                </div>
+            </div>
+        </section>
     </div>
 
     <!-- Task Modal -->
     <div id="taskModal" class="modal">
         <div class="modal-content">
-            <h3>Add New Task</h3>
+            <h3>➕ Add New Task</h3>
             <form id="taskForm">
                 <input type="text" id="taskTitle" placeholder="Task Title" required>
-                <textarea id="taskDescription" placeholder="Task Description"></textarea>
+                <textarea id="taskDescription" placeholder="Task Description" rows="3"></textarea>
+
                 <div class="datetime-group">
                     <input type="date" id="taskDueDate" required>
                     <input type="time" id="taskDueTime" required>
                 </div>
-                <select id="taskPriority">
-                    <option value="low">Low Priority</option>
-                    <option value="medium" selected>Medium Priority</option>
-                    <option value="high">High Priority</option>
+
+                <select id="taskPriority" required>
+                    <option value="">Select Priority</option>
+                    <option value="high">🔴 High Priority</option>
+                    <option value="medium">🟡 Medium Priority</option>
+                    <option value="low">🟢 Low Priority</option>
                 </select>
+
+                <!-- NEW: AI Timeline Section -->
+                <div class="ai-timeline-section">
+                    <button type="button" class="ai-timeline-btn" onclick="generateTaskTimeline()">🤖 Get AI Timeline Estimate</button>
+                    <div id="aiTimelineResult" class="ai-timeline-result"></div>
+                </div>
+
                 <div class="form-actions">
                     <button type="button" onclick="closeTaskModal()">Cancel</button>
                     <button type="submit">Add Task</button>
@@ -210,43 +175,120 @@
         </div>
     </div>
 
-    <!-- FIXED Roadmap Generation Modal -->
+    <!-- ENHANCED Student ID Card Modal -->
+    <div id="studentCardModal" class="modal">
+        <div class="student-id-card">
+            <div class="card-close">
+                <button class="close-btn" onclick="closeStudentCard()">&times;</button>
+            </div>
+
+            <div class="id-card">
+                <!-- Header Section -->
+                <div class="card-header-section">
+                    <div class="institution-logo">🎓</div>
+                    <div class="institution-info">
+                        <h2 id="displayInstitution">Institution Name</h2>
+                        <p>Student Identification Card</p>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="card-main-content">
+                    <!-- Photo Section -->
+                    <div class="student-photo">
+                        <div class="photo-placeholder" id="photoPlaceholder">
+                            <span>📷</span>
+                        </div>
+                        <input type="file" id="photoUpload" accept="image/*" style="display: none;" onchange="handlePhotoUpload(event)">
+                        <button class="upload-photo-btn" onclick="document.getElementById('photoUpload').click()">
+                            📸 Upload Photo
+                        </button>
+                    </div>
+
+                    <!-- Student Details -->
+                    <div class="student-details">
+                        <div class="detail-row">
+                            <label>Name:</label>
+                            <input type="text" id="cardName" placeholder="Enter full name">
+                        </div>
+
+                        <div class="detail-row">
+                            <label>Student ID:</label>
+                            <input type="text" id="cardStudentId" placeholder="Enter student ID">
+                        </div>
+
+                        <div class="detail-row">
+                            <label>Course:</label>
+                            <input type="text" id="cardCourse" readonly>
+                        </div>
+
+                        <div class="detail-row">
+                            <label>Department:</label>
+                            <input type="text" id="cardDepartment" readonly>
+                        </div>
+
+                        <div class="detail-row">
+                            <label>Phone:</label>
+                            <input type="tel" id="cardPhone" placeholder="Enter phone number">
+                        </div>
+
+                        <div class="detail-row">
+                            <label>Emergency:</label>
+                            <input type="tel" id="cardEmergencyContact" placeholder="Emergency contact">
+                        </div>
+
+                        <!-- Footer Section -->
+                        <div class="card-footer-section">
+                            <div class="validity">
+                                <p><strong>Valid Until:</strong> 2026-07-31</p>
+                                <button class="save-card-btn" onclick="saveStudentCard()">💾 Save Profile</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENHANCED Roadmap Modal -->
     <div id="roadmapModal" class="modal">
         <div class="modal-content roadmap-modal">
             <h3>🗺️ Generate Learning Roadmap</h3>
             <form id="roadmapForm">
                 <div class="form-group">
-                    <label>Career Goal</label>
-                    <select id="careerGoal" required>
-                        <option value="">Select Career Goal</option>
-                        <!-- Options will be populated based on education level -->
-                    </select>
+                    <label for="careerGoalInput">🎯 Career Goal:</label>
+                    <input type="text" id="careerGoalInput" placeholder="e.g., Full Stack Developer, Data Scientist, AI Engineer" required>
                 </div>
 
                 <div class="form-group">
-                    <label>Current Skill</label>
+                    <label for="currentSkill">📊 Current Level:</label>
                     <select id="currentSkill" required>
-                        <option value="">Current Skill Level</option>
-                        <option value="Beginner">Beginner</option>
-                        <option value="Intermediate">Intermediate</option>
-                        <option value="Advanced">Advanced</option>
+                        <option value="">Select your current level</option>
+                        <option value="beginner">🌱 Beginner</option>
+                        <option value="intermediate">📈 Intermediate</option>
+                        <option value="advanced">🚀 Advanced</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Target Timeframe</label>
+                    <label for="timeframe">⏰ Timeframe:</label>
                     <select id="timeframe" required>
-                        <option value="">Select Timeframe</option>
-                        <option value="3 months">3 months</option>
-                        <option value="6 months">6 months</option>
-                        <option value="1 year">1 year</option>
-                        <option value="2 years">2 years</option>
+                        <option value="">Select timeframe</option>
+                        <option value="3 months">3 Months</option>
+                        <option value="6 months">6 Months</option>
+                        <option value="1 year">1 Year</option>
+                        <option value="2 years">2 Years</option>
                     </select>
                 </div>
 
+                <!-- NEW: Tag-based Skills Input -->
                 <div class="form-group">
-                    <label>Current Skills & Interests</label>
-                    <textarea id="specificInterests" placeholder="List your current skills and specific interests (e.g., JavaScript, Python, React, Machine Learning, etc.)" rows="4"></textarea>
+                    <label for="skillsInterestsInput">💡 Current Skills & Interests:</label>
+                    <div class="tags-input-container">
+                        <div class="tags-display" id="tagsDisplay"></div>
+                        <input type="text" id="skillsInterestsInput" placeholder="Type a skill/interest and press Enter">
+                    </div>
+                    <small>Press Enter after typing each skill or interest</small>
                 </div>
 
                 <div class="form-actions">
@@ -257,7 +299,9 @@
         </div>
     </div>
 
+    <!-- Notification -->
     <div id="notification" class="notification"></div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+    <script src="/static/script.js"></script>
 </body>
 </html>
